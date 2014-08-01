@@ -11,52 +11,85 @@ var SBATCH = "/usr/bin/sbatch";
 var SRUN = "/usr/bin/srun";
 var SINFO= "/usr/bin/sinfo";
 var SCONTROL = "/usr/bin/scontrol";
+var SQUEUE = "/usr/bin/squeue";
 
-var sbatch = exports.sbatch = function(args, opts){
-	opts=opts||{};
-	var cmdArgs = Object.keys(args).map(function(prop){
-		return "--" + prop + "=" + args[prop]
-	});
-	var def = new defer();
-	execFile(SBATCH,cmdArgs, opts, function(err,stdout,stderr){
-		if (err) { def.reject(err) ; return; }
-		def.resolve({stdout: stdout, stderr: stderr});	
-	});
-	return def.promise;
-}
+
 var sinfo = exports.sinfo = function(args, opts){
 	opts=opts||{};
-	var cmdArgs = Object.keys(args).map(function(prop){
-		return "--" + prop + "=" + args[prop]
+	var args = Object.keys(opts).map(function(prop){
+		return "--" + prop + "=" + opts[prop]
 	});
 	var def = new defer();
-	execFile(SINFO,cmdArgs, opts, function(err,stdout,stderr){
+	execFile(SINFO,args, opts, function(err,stdout,stderr){
+		if (err) { def.reject(err) ; return; }
+		def.resolve({stdout: stdout, stderr: stderr});	
+	});
+	return def.promise;
+
+}
+var squeue = exports.squeue = function(opts){
+	opts=opts||{};
+	var args = Object.keys(opts).map(function(prop){
+		return "--" + prop + "=" + opts[prop]
+	});
+	var def = new defer();
+	execFile(SQUEUE,args, opts, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
 		def.resolve({stdout: stdout, stderr: stderr});	
 	});
 	return def.promise;
 }
 
-var srun = exports.srun = function(args, opts){
-	opts=opts||{};
-	var cmdArgs = Object.keys(args).map(function(prop){
-		return "--" + prop + "=" + args[prop]
+var srun = exports.srun = function(opts,command,cmdArgs){
+	opts=opts||{}
+	cmdArgs=cmdArgs||[];
+
+	var args = Object.keys(opts).map(function(prop){
+		return "--" + prop + "=" + opts[prop]
 	});
 	var def = new defer();
-	execFile(SRUN,cmdArgs, opts, function(err,stdout,stderr){
+
+	args.push(command);
+	args = args.concat(cmdArgs);
+
+	execFile(SRUN,args, {}, function(err,stdout,stderr){
+		if (err) { def.reject(err) ; return; }
+		def.resolve({stdout: stdout, stderr: stderr});	
+	});
+	return def.promise;
+}
+var sbatch = exports.sbatch = function(opts,command,cmdArgs){
+	opts=opts||{}
+	cmdArgs=cmdArgs||[];
+
+	var args = Object.keys(opts).map(function(prop){
+		return "--" + prop + "=" + opts[prop]
+	});
+	var def = new defer();
+
+	args.push(command);
+	args = args.concat(cmdArgs);
+
+	execFile(SBATCH,args, {}, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
 		def.resolve({stdout: stdout, stderr: stderr});	
 	});
 	return def.promise;
 }
 
-var scontrol = exports.scontrol = function(args, opts){
-	opts=opts||{};
-	var cmdArgs = Object.keys(args).map(function(prop){
-		return "--" + prop + "=" + args[prop]
+var scontrol = exports.scontrol= function(opts,command,cmdArgs){
+	opts=opts||{}
+	cmdArgs=cmdArgs||[];
+
+	var args = Object.keys(opts).map(function(prop){
+		return "--" + prop + "=" + opts[prop]
 	});
 	var def = new defer();
-	execFile(SCONTROL,cmdArgs, opts, function(err,stdout,stderr){
+
+	args.push(command);
+	args = args.concat(cmdArgs);
+
+	execFile(SCONTROL,args, {}, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
 		def.resolve({stdout: stdout, stderr: stderr});	
 	});
