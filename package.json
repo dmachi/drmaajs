@@ -1,0 +1,26 @@
+{
+	"name": "drmaajs",
+	"description": "DRMAA JS",
+	"author": "Dustin Machi",
+	"version": "0.0.2",
+	"contributors": [],
+	"maintainers": [
+		{
+  			"name": "Dustin Machi",
+  			"email": "dmachi@vbi.vt.edu"
+  	  	}
+	],
+	"bugs": { 
+		"url" : "http://github.com/dmachi/drmaajs/issues",
+		"email" : "dmachi@vbi.vt.edu"
+	},
+	"repository": { 
+		"url" : "http://github.com/dmachi/drmaajs.git",
+		"type" : "git"
+	},
+	
+	"dependencies": {
+		"promised-io": "*",
+		"dojo-declare": "*"
+	}
+}
