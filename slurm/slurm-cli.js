@@ -1,11 +1,6 @@
-var drmaa = require("./drmaa");
 var execFile = require("child_process").execFile;
 var defer = require("promised-io/promise").defer;
-var declare = require("dojo-declare/declare");
-
-Object.keys(drmaa).forEach(function(key){
-	exports[key] = drmaa[key];
-});
+var Version = require("../Version").Version;
 
 var SBATCH = "/usr/bin/sbatch";
 var SRUN = "/usr/bin/srun";
@@ -46,6 +41,17 @@ var SINFO_JSON_FORMAT = "{" + SINFO_FIELDS.map(function(f){
 }).join(",") + "}";
 
 
+var getDrmsInfo = exports.getDrmsInfo =  function(){
+	execFile(SINFO,["--version"], opts, function(err,stdout,stderr){
+		if (err) { def.reject(err) ; return; }
+		var data =  stdout.split(" ");
+		var res = {drmsName: data[0]}
+		var vparts = data[1].split(".");
+		res.version = new Version(vparts[0],vparts[1]);
+		def.resolve(res);	
+	});
+
+}
 
 var sinfo = exports.sinfo = function(args, opts){
 	opts=opts||{};
@@ -65,7 +71,6 @@ var sinfo = exports.sinfo = function(args, opts){
 		def.resolve(res);	
 	});
 	return def.promise;
-
 }
 
 var SQUEUE_FIELDS = [
@@ -257,33 +262,3 @@ SCONTROL_COMMANDS.forEach(function(cmd){
 	}
 });
 
-
-
-var Job = exports.Job= declare([], {
-	suspend: function(){
-	},
-	resume: function(){
-
-	},
-	hold: function(){
-
-	},
-	release: function(){
-
-	},
-	terminate: function(){
-
-	},
-	getState: function(jobSubState){
-
-	},
-	getInfo: function(){
-
-	},
-	waitStarted: function(timeout){
-
-	},
-	waitTerminated: function(timeout){
-
-	}
-});
