@@ -13,33 +13,120 @@ var SINFO= "/usr/bin/sinfo";
 var SCONTROL = "/usr/bin/scontrol";
 var SQUEUE = "/usr/bin/squeue";
 
+var SINFO_FIELDS= [
+	["partitionstate", "\"%a\""],
+	["cpuspernode","\"%c\""],
+	["cpustate","\"%C\""],
+	["tempdiskspace","%d"],
+	["numnodes","%D"],
+	["nodefeatures", "\"%f\""],
+	["accessgroups","\"%g\""],
+	["gres","\"%G\""],
+	["jobsmayshare","\"%h\""],
+	["maxtime","\"%l\""],
+	["memorypernode","%m"],
+	["preemptionmode","\"%M\""],
+	["nodehostnames","\"%n\""],
+	["nodenames","\"%N\""],
+	["nodeaddresses","\"%o\""],
+	["partition", "\"%P\""],
+	["onlyroot","\"%r\""],
+	["reason","\"%R\""],
+	["maxjobsize","\"%s\""],
+	["allowedallocating","\"%S\""],
+	["nodestate","\"%T\""],
+	["schedulingweight", "\"%w\""],
+	["socketspernode", "\"%X\""],
+	["corespersocket", "\"%Y\""],
+	["threadspercore", "\"%Z\""]
+]
+
+var SINFO_JSON_FORMAT = "{" + SINFO_FIELDS.map(function(f){
+	return "\"" + f[0] + "\":" + f[1];
+}).join(",") + "}";
+
+
 
 var sinfo = exports.sinfo = function(args, opts){
 	opts=opts||{};
 	var args = Object.keys(opts).map(function(prop){
 		return "--" + prop + "=" + opts[prop]
 	});
+
+        args.push("-h");
+        args.push("--format=" + SINFO_JSON_FORMAT);
+
 	var def = new defer();
 	execFile(SINFO,args, opts, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
-		def.resolve({stdout: stdout, stderr: stderr});	
+		var data = "[" + stdout.split("\n").filter(function(line){ return line!=="" }).join(",") + "]"
+		console.log("data: ",data);
+		var res = JSON.parse(data);
+		def.resolve(res);	
 	});
 	return def.promise;
 
 }
 
-SQUEUE_JSON_FORMAT = "\"{'id':'%i','partition':'%P','jobName':'%j','userId':'%U','state':'%T', 'account':'%a','ntasks':%A,'gres':'%b','batchHost':'%B','nodes':%D,'timeSpent':'%M','allocatedNodeNames':'%N'}\""
+var SQUEUE_FIELDS = [
+	["account", "\"%a\""],
+//	["ntasks","\"%A\""],
+	["gres","\"%b\""],
+	["batchhost","\"%B\""],
+	["mincpus","%c"],
+	["cpus","%C"],
+	["mintemp","%d"],
+	["allocatednodes","%D"],
+	["endtime","\"%e\""],
+	["dependency","\"%E\""],
+	["requiredfeatures","\"%f\""],
+	["groupname","\"%g\""],
+	["groupid","\"%G\""],
+	['exclusive',"\"%h\""],
+	['socketspernode',"\"%H\""],
+	['jobid',"%i"],
+	['corespersocket',"\"%I\""],
+	['jobname',"\"%j\""],
+	['threadspercore',"\"%J\""],
+	['comment', "\"%k\""],
+	['timelimit',"\"%l\""],
+	['timeleft',"\"%L\""],
+	['minmemory',"%m"],
+	['timeused',"\"%M\""],
+	['requestednodenames',"\"%n\""],
+	['allocatednodenames',"\"%N\""],
+	['contiguousnodesrequested',"%O"],
+	['priority',"%p"],
+	['partition',"\"%P\""],
+	['qos',"\"%Q\""],
+	['reason',"\"%r\""],
+	['expectedstarttime',"\"%S\""],
+	['jobstate',"\"%t\""],
+	['extendedjobstate',"\"%T\""],
+	['username',"\"%u\""],
+	['userid',"\"%U\""],
+	['reservation',"\"%v\""],
+	['excludednodes',"\"%x\""]
+]
+
+var SQUEUE_JSON_FORMAT = "{" + SQUEUE_FIELDS.map(function(f){
+	return "\"" + f[0] + "\":" + f[1];
+}).join(",") + "}";
 
 var squeue = exports.squeue = function(opts){
 	opts=opts||{};
 	var args = Object.keys(opts).map(function(prop){
 		return "--" + prop + "=" + opts[prop]
 	});
+	args.push("-h");
 	args.push("--format=" + SQUEUE_JSON_FORMAT);
+
 	var def = new defer();
 	execFile(SQUEUE,args, opts, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
-		def.resolve({stdout: stdout, stderr: stderr});	
+		var data = "[" + stdout.split("\n").filter(function(line){ return line!=="" }).join(",") + "]"
+		var res = JSON.parse(data);
+		def.resolve(res);	
 	});
 	return def.promise;
 }
@@ -81,7 +168,42 @@ var sbatch = exports.sbatch = function(opts,command,cmdArgs){
 	return def.promise;
 }
 
-var scontrol = exports.scontrol= function(opts,command,cmdArgs){
+
+var SCONTROL_COMMANDS = [
+	"abort",
+	"all",
+	"clsuter",
+	"check",
+	"completing",
+	"create",
+	"details",
+	"delete",
+	"hold",
+	"holdu",
+	"listpids",
+	"notify",
+	"oneliner",
+	"pidinfo",
+	"ping",
+	"reconfigure",
+	"release",
+	"requeue",
+	"resume",
+	"setdebug",
+	"setdebugflags",
+	"schedloglevel",
+	"show",
+	"shutdown",
+	"suspend",
+	"takeover",
+	"uhold",
+	"update",
+	"wait_job"
+]
+
+var scontrol = exports.scontrol = {}
+
+var scontrolFunc = function(opts,command,cmdArgs){
 	opts=opts||{}
 	cmdArgs=cmdArgs||[];
 
@@ -91,14 +213,51 @@ var scontrol = exports.scontrol= function(opts,command,cmdArgs){
 	var def = new defer();
 
 	args.push(command);
+	if (typeof cmdArgs=="string") {
+		cmdArgs = cmdArgs.split(" ");
+	}
 	args = args.concat(cmdArgs);
 
 	execFile(SCONTROL,args, {}, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
-		def.resolve({stdout: stdout, stderr: stderr});	
+		var out={}
+		var d = stdout.replace(/\n/g," ");
+		var sp = d.split(" ");
+		sp.forEach(function(pair){
+			if (pair) { 
+				var tuple = pair.split("=");
+				if (tuple[0] && tuple[1]) {
+					tuple[0]=tuple[0].replace(/:/g,"_").replace("/","_").toLowerCase();
+					if (tuple[1]=="(null)") {
+						tuple[1]=null;	
+					}
+
+					if (tuple[0]=="groupid"){
+						var gr=tuple[1].split("(");
+						out['groupname']=gr[0];
+						out['groupid'] = gr[1].replace(")","");
+					}else if (tuple[0]=="userid"){
+						var gr=tuple[1].split("(");
+						out['usenrame']=gr[0];
+						out['userid'] = gr[1].replace(")","");
+					}else {
+						out[tuple[0]]=tuple[1];
+					}
+				}
+			}
+		})	
+		def.resolve(out);
 	});
 	return def.promise;
 }
+
+SCONTROL_COMMANDS.forEach(function(cmd){
+	scontrol[cmd] = function(args,opts){
+		return scontrolFunc(opts,cmd,args);
+	}
+});
+
+
 
 var Job = exports.Job= declare([], {
 	suspend: function(){
