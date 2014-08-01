@@ -27,11 +27,15 @@ var sinfo = exports.sinfo = function(args, opts){
 	return def.promise;
 
 }
+
+SQUEUE_JSON_FORMAT = "\"{'id':'%i','partition':'%P','jobName':'%j','userId':'%U','state':'%T', 'account':'%a','ntasks':%A,'gres':'%b','batchHost':'%B','nodes':%D,'timeSpent':'%M','allocatedNodeNames':'%N'}\""
+
 var squeue = exports.squeue = function(opts){
 	opts=opts||{};
 	var args = Object.keys(opts).map(function(prop){
 		return "--" + prop + "=" + opts[prop]
 	});
+	args.push("--format=" + SQUEUE_JSON_FORMAT);
 	var def = new defer();
 	execFile(SQUEUE,args, opts, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
