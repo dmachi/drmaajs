@@ -1,9 +1,10 @@
 var declare = require("dojo-declare/declare");
 var exceptions = require("./Exceptions");
+var EventEmitter = require('events').EventEmitter;
 
 var jobIdIndex=1;
 
-var JobSession = exports.JobSession= declare([], {
+var JobSession = exports.JobSession= declare([EventEmitter], {
 	contact: "",
 	sessionName: "",
 	jobCategories: [],

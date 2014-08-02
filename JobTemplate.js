@@ -4,6 +4,7 @@ var drmaa = require("./drmaa");
 var JobTemplate = exports.JobTemplate = declare([], {
 	remoteCommand: "",
 	args: [],
+	nativeParams: "",
 	submitAsHold: false,
 	rerunnable: false,
 	jobEnvironment: {},

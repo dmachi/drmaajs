@@ -4,6 +4,7 @@ var Version = require("../Version").Version;
 
 var SBATCH = "/usr/bin/sbatch";
 var SRUN = "/usr/bin/srun";
+var SALLOC= "/usr/bin/salloc";
 var SINFO= "/usr/bin/sinfo";
 var SCONTROL = "/usr/bin/scontrol";
 var SQUEUE = "/usr/bin/squeue";
@@ -42,7 +43,8 @@ var SINFO_JSON_FORMAT = "{" + SINFO_FIELDS.map(function(f){
 
 
 var getDrmsInfo = exports.getDrmsInfo =  function(){
-	execFile(SINFO,["--version"], opts, function(err,stdout,stderr){
+	var def = new defer();
+	execFile(SINFO,["--version"], {}, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
 		var data =  stdout.split(" ");
 		var res = {drmsName: data[0]}
@@ -50,7 +52,7 @@ var getDrmsInfo = exports.getDrmsInfo =  function(){
 		res.version = new Version(vparts[0],vparts[1]);
 		def.resolve(res);	
 	});
-
+	return def.promise;
 }
 
 var sinfo = exports.sinfo = function(args, opts){
@@ -137,16 +139,12 @@ var squeue = exports.squeue = function(opts){
 }
 
 var srun = exports.srun = function(opts,command,cmdArgs){
-	opts=opts||{}
+	opts = opts || [];
 	cmdArgs=cmdArgs||[];
 
-	var args = Object.keys(opts).map(function(prop){
-		return "--" + prop + "=" + opts[prop]
-	});
 	var def = new defer();
-
-	args.push(command);
-	args = args.concat(cmdArgs);
+	opts.push(command);
+	args = opts.concat(cmdArgs);
 
 	execFile(SRUN,args, {}, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
@@ -154,7 +152,7 @@ var srun = exports.srun = function(opts,command,cmdArgs){
 	});
 	return def.promise;
 }
-var sbatch = exports.sbatch = function(opts,command,cmdArgs){
+var salloc = exports.salloc = function(opts,command,cmdArgs){
 	opts=opts||{}
 	cmdArgs=cmdArgs||[];
 
@@ -166,10 +164,32 @@ var sbatch = exports.sbatch = function(opts,command,cmdArgs){
 	args.push(command);
 	args = args.concat(cmdArgs);
 
-	execFile(SBATCH,args, {}, function(err,stdout,stderr){
+	execFile(SALLOC,args, {}, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
 		def.resolve({stdout: stdout, stderr: stderr});	
 	});
+	return def.promise;
+}
+var sbatch = exports.sbatch= function(opts,command,cmdArgs){
+	opts = (opts && typeof opts=='string')?opts:opts.join(" ");
+	console.log("Command: " + SBATCH + " " + opts);
+	var def = new defer();
+	var script = "#!/bin/sh\n\n"
+//	opts.split(" ").forEach(function(o){
+//		script += "#SBATCH " + o + "\n"
+//	});
+	script += "#SBATCH " + opts + "\n";
+	script += "\n" + command + cmdArgs + "\n";
+
+	console.log("Exec Script: ", script);
+	var child = execFile(SBATCH,opts, {}, function(err,stdout,stderr){
+		if (err) { def.reject(err) ; return; }
+		def.resolve({stdout: stdout, stderr: stderr});	
+	});
+
+	//write the shell script to stdin
+	child.stdin.end(script);
+
 	return def.promise;
 }
 
@@ -222,7 +242,7 @@ var scontrolFunc = function(opts,command,cmdArgs){
 		cmdArgs = cmdArgs.split(" ");
 	}
 	args = args.concat(cmdArgs);
-
+	console.log("SCONTROL Args: ", args);
 	execFile(SCONTROL,args, {}, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
 		var out={}
@@ -243,7 +263,7 @@ var scontrolFunc = function(opts,command,cmdArgs){
 						out['groupid'] = gr[1].replace(")","");
 					}else if (tuple[0]=="userid"){
 						var gr=tuple[1].split("(");
-						out['usenrame']=gr[0];
+						out['username']=gr[0];
 						out['userid'] = gr[1].replace(")","");
 					}else {
 						out[tuple[0]]=tuple[1];

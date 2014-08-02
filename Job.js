@@ -1,14 +1,15 @@
 var declare = require("dojo-declare/declare");
 var UnsupportedOperationException = require("./Exceptions").UnsupportedOperationException;
+var EventEmitter = require('events').EventEmitter;
 
-var Job = exports.Job= declare([], {
+var Job = exports.Job= declare([EventEmitter], {
 	jobId: "",
 	sessionName: "",
 	jobTemplate: "",
 	constructor: function(jobId,sessionName,jobTemplate){
 		this.jobId=jobId;
 		this.sessionName = sessionName;
-		this.jobTemplate = template;
+		this.jobTemplate = jobTemplate;
 	},
 	suspend: function(){
 		throw new UnsupportedOperationException("suspend() must be implemented in subclass");

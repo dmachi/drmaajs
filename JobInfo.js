@@ -18,10 +18,7 @@ var JobInfo = exports.JobInfo = declare([], {
 	dispatchTime: null,
 	finishTime: null,
 
-	constructor: function(params){
-		params = params || {}
-		for (var prop in params){
-			this[prop]=params[prop];
-		}
+	constructor: function(nativeJobInfo){
+		this.nativeJobInfo=nativeJobInfo;
 	}
 });

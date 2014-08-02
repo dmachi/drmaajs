@@ -1,6 +1,7 @@
 var declare = require("dojo-declare/declare");
+var EventEmitter = require('events').EventEmitter;
 
-var MonitoringSession = exports.MonitoringSession= declare([], {
+var MonitoringSession = exports.MonitoringSession= declare([EventEmitter], {
 	getAllReservations: function(){
 
 	},
