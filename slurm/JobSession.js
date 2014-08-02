@@ -17,7 +17,7 @@ var JobSession = exports.JobSession= declare([JobSessionBase], {
 			throw new exceptions.InvalidArgumentExcpetion("Job Template must be an instance of JobTemplate");
 		}
 
-		var job = new Job(jobIdIndex++,this.sessionName,jobTemplate);
+		var job = new Job(this.sessionName,jobTemplate);
 		this.jobs.push(job);
 		return job;		
 	}

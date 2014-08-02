@@ -6,7 +6,7 @@ var Job = exports.Job= declare([EventEmitter], {
 	jobId: "",
 	sessionName: "",
 	jobTemplate: "",
-	constructor: function(jobId,sessionName,jobTemplate){
+	constructor: function(sessionName,jobTemplate,jobId){
 		this.jobId=jobId;
 		this.sessionName = sessionName;
 		this.jobTemplate = jobTemplate;

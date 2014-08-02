@@ -7,21 +7,26 @@ var JobBase = require("../Job").Job;
 var JobInfo = require("./JobInfo").JobInfo;
 
 var Job = exports.Job= declare([JobBase], {
-	constructor: function(jobId,sessionName,jobTemplate){
+	constructor: function(sessionName,jobTemplate,jobId){
 		var opts = this.getSBatchOpts(jobTemplate,sessionName);
 		this.state="UNDETERMINED";
 		var _self=this;
 		this._jobDefer = new defer();
-
-		when(slurm.sbatch.apply(this,opts), function(results){
-			_self.jobId = results.stdout.split(" job ")[1].trim();
-			if (!_self.jobId){
-				console.log("Error getting job id", results);
-			}	
-			_self._jobDefer.resolve(this);
-			console.log("Started Job " + _self.jobId);
-		});
-
+		if (jobTemplate && !jobId) {
+			when(slurm.sbatch.apply(this,opts), function(results){
+				_self.jobId = results.stdout.split(" job ")[1].trim();
+				if (!_self.jobId){
+					console.log("Error getting job id", results);
+				}	
+				_self._jobDefer.resolve(_self);
+				console.log("Started Job " + _self.jobId);
+			});
+		}else if(jobId){
+			this.jobId=jobId;
+			when(this.getSate(), function(){
+				_self._jobDefer.resolve(_self);
+			});
+		}
                 this.interval=2000;
                 //this.startMonitor();
         },
