@@ -20,5 +20,22 @@ var JobSession = exports.JobSession= declare([JobSessionBase], {
 		var job = new Job(this.sessionName,jobTemplate);
 		this.jobs.push(job);
 		return job;		
+	},
+	reattachJob: function(jobId){
+		var _self=this;
+		return when(this.getJobs(), function(jobs){
+			var job;
+			jobs.some(function(sjob){		
+				if (sjob.jobId==jobId){
+					job=sjob;
+				}
+			})
+			if (!job){	
+				job = new Job(this.sessionName,null,jobId);
+				_self.jobs.push(job);
+			}
+			return job;
+
+		});
 	}
 });

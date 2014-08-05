@@ -245,33 +245,37 @@ var scontrolFunc = function(opts,command,cmdArgs){
 	console.log("SCONTROL Args: ", args);
 	execFile(SCONTROL,args, {}, function(err,stdout,stderr){
 		if (err) { def.reject(err) ; return; }
-		var out={}
-		var d = stdout.replace(/\n/g," ");
-		var sp = d.split(" ");
-		sp.forEach(function(pair){
-			if (pair) { 
-				var tuple = pair.split("=");
-				if (tuple[0] && tuple[1]) {
-					tuple[0]=tuple[0].replace(/:/g,"_").replace("/","_").toLowerCase();
-					if (tuple[1]=="(null)") {
-						tuple[1]=null;	
-					}
-
-					if (tuple[0]=="groupid"){
-						var gr=tuple[1].split("(");
-						out['groupname']=gr[0];
-						out['groupid'] = gr[1].replace(")","");
-					}else if (tuple[0]=="userid"){
-						var gr=tuple[1].split("(");
-						out['username']=gr[0];
-						out['userid'] = gr[1].replace(")","");
-					}else {
-						out[tuple[0]]=tuple[1];
+		if (command=="show") {	
+			var out={}
+			var d = stdout.replace(/\n/g," ");
+			var sp = d.split(" ");
+			sp.forEach(function(pair){
+				if (pair) { 
+					var tuple = pair.split("=");
+						if (tuple[0] && tuple[1]) {
+						tuple[0]=tuple[0].replace(/:/g,"_").replace("/","_").toLowerCase();
+						if (tuple[1]=="(null)") {
+							tuple[1]=null;	
+						}
+	
+						if (tuple[0]=="groupid"){
+							var gr=tuple[1].split("(");
+							out['groupname']=gr[0];
+							out['groupid'] = gr[1].replace(")","");
+						}else if (tuple[0]=="userid"){
+							var gr=tuple[1].split("(");
+							out['username']=gr[0];
+							out['userid'] = gr[1].replace(")","");
+						}else {
+							out[tuple[0]]=tuple[1];
+						}
 					}
 				}
-			}
-		})	
-		def.resolve(out);
+			})	
+			def.resolve(out);
+		}else{
+			def.resolve({stdout: stdout,stderr: stderr});
+		}
 	});
 	return def.promise;
 }

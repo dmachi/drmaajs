@@ -8,25 +8,31 @@ var JobInfo = require("./JobInfo").JobInfo;
 
 var Job = exports.Job= declare([JobBase], {
 	constructor: function(sessionName,jobTemplate,jobId){
-		var opts = this.getSBatchOpts(jobTemplate,sessionName);
 		this.state="UNDETERMINED";
 		var _self=this;
 		this._jobDefer = new defer();
 		if (jobTemplate && !jobId) {
+			var opts = this.getSBatchOpts(jobTemplate,sessionName);
 			when(slurm.sbatch.apply(this,opts), function(results){
 				_self.jobId = results.stdout.split(" job ")[1].trim();
 				if (!_self.jobId){
 					console.log("Error getting job id", results);
 				}	
-				_self._jobDefer.resolve(_self);
-				console.log("Started Job " + _self.jobId);
+				when(_self.getState(), function(){
+					_self._jobDefer.resolve(_self);
+					console.log("Started Job " + _self.jobId);
+				});
 			});
 		}else if(jobId){
 			this.jobId=jobId;
-			when(this.getSate(), function(){
+			when(this.getState(), function(){
 				_self._jobDefer.resolve(_self);
 			});
 		}
+
+		when(this._jobDefer, function(){
+			_self.emit("ready", _self.jobId);
+		});
                 this.interval=2000;
                 //this.startMonitor();
         },
@@ -144,33 +150,55 @@ var Job = exports.Job= declare([JobBase], {
 		return [opts.join(' '),jobTemplate.remoteCommand,jobTemplate.args];
 	},
 	suspend: function(){
+		console.log("Suspending DRMAA Job " + this.jobId);
 		return when(slurm.scontrol.suspend(this.jobId), function(results){
 			console.log("Suspend Results: ", results.stdout, results.stderr);
+			if (results.stderr) {
+				throw new Error(results.stderr);
+			}	
+			return true;
 		});
 	},
 	resume: function(){
 		return when(slurm.scontrol.resume(this.jobId), function(results){
 			console.log("Resume Results: ", results.stdout, results.stderr);
+			if (results.stderr) {
+				throw new Error(results.stderr);
+			}	
+			return true;
+	
 		});
 	
 	},
 	hold: function(){
 		return when(slurm.scontrol.suspend(this.jobId), function(results){
 			console.log("hold Results: ", results.stdout, results.stderr);
+			if (results.stderr) {
+				throw new Error(results.stderr);
+			}	
+			return true;
+	
 		});
 	
 	},
 	release: function(){
 		return when(slurm.scontrol.release(this.jobId), function(results){
 			console.log("release Results: ", results.stdout, results.stderr);
+			if (results.stderr) {
+				throw new Error(results.stderr);
+			}	
+			return true;
+	
 		});
 	
 	},
 	terminate: function(){
 		return when(slurm.scontrol.suspend(this.jobId), function(results){
-			console.log("terminate Results: ", results.stdout, results.stderr);
+			if (results.stderr) {
+				throw new Error(results.stderr);
+			}	
+			return true;
 		});
-	
 	},
 	getState: function(jobSubState){
 		var _self=this;	
@@ -183,14 +211,14 @@ var Job = exports.Job= declare([JobBase], {
 	},
 	setState: function(state){
 		var _self=this;
-		if (this.state != state){
+//		if (this.state != state){
 			var orig = this.state;
 			console.log("Set State for: ", state," Refresh JobInfo");
 			return when(_self.getInfo(), function(info){
 				_self.emit(_self.state, {job: info});
 				_self.emit("StateChanged",{oldState: orig, newState: _self.state, job: info});
 			});
-		}
+//		}
 		return state;
 	},
 	getInfo: function(){
@@ -203,6 +231,7 @@ var Job = exports.Job= declare([JobBase], {
 			return when(slurm.scontrol.show("job " + _self.jobId), function(jobInfo){
 				_self.jobInfo = new JobInfo(jobInfo);
 				_self.state = _self.jobInfo.jobState;
+				console.log("Updated jobInfo: ", _self.jobInfo, _self.state);
 				return _self.jobInfo;
 			});
 		});

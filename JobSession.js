@@ -21,12 +21,6 @@ var JobSession = exports.JobSession= declare([EventEmitter], {
 	getJobArray: function(jobArrayId){
 
 	},
-
-	reattachJob: function(jobId){
-		var job = new Job(this.sessionName,null,jobId);
-		this.jobs.push(job);
-		return job;
-	},
 	runJob: function(jobTemplate){
 		if (!(jobTemplate instanceof JobTemplate)){
 			throw new exceptions.InvalidArgumentExcpetion("Job Template must be an instance of JobTemplate");
